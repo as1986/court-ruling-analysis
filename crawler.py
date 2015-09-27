@@ -1,10 +1,13 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
+from bs4 import BeautifulSoup
 
 
 class Crawler:
+
     def __init__(self):
+
         import requests
         self.__session = requests.Session()
         self.__session.get('http://210.69.124.221/FJUD/FJUDQRY01_1.aspx',
@@ -28,7 +31,30 @@ class Crawler:
         requested.encoding = 'utf-8'
         return requested.text
 
+    def get(self, page):
+        results = self.__session.get(page, headers={'referer':'http://jirs.judicial.gov.tw/FJUD/FJUDQRY02_1.aspx'})
+        results.encoding = 'utf-8'
+        return results.text
 
+    def cleanse(self, crawled):
+        soup = BeautifulSoup(crawled)
+        return soup.get_text()
+
+    def get_links(self, query_results):
+        prefix = 'http://210.69.124.221/FJUD/'
+        to_return = []
+        soup = BeautifulSoup(query_results)
+        entries = soup.findAll("table", { "id" : "Table3" })
+        # print entries
+        for e in entries:
+            links = e.findAll('a')
+            # print links
+            for l in links:
+                cand = l['href']
+                if cand is not None and cand is not '#':
+                    to_return.append(prefix+cand)
+
+        return to_return
 
 def main():
     terms = [u'賴素如', u'蔡正元']
@@ -36,7 +62,11 @@ def main():
     c = Crawler()
     for t in terms:
         print u'term {}'.format(t)
-        print c.query(t, court)
+        q = c.query(t, court)
+        links = c.get_links(q)
+        for l in links:
+            print c.cleanse(c.get(l))
+
 
 
 if __name__ == '__main__':
