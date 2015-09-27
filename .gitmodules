@@ -1,0 +1,3 @@
+[submodule "AnalyzeVerdict"]
+	path = AnalyzeVerdict
+	url = git@github.com:csferng/AnalyzeVerdict.git
