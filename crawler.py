@@ -27,8 +27,14 @@ class Crawler:
         self.payload['jmain1'] = term
         self.payload['jmain'] = term
         self.payload['v_court'] = court
-        requested = self.__session.post('http://210.69.124.221/FJUD/FJUDQRY02_1.aspx', self.payload,
-                                        headers={'referer': 'http://jirs.judicial.gov.tw/FJUD/FJUDQRY01_1.aspx'})
+        for _ in xrange(3):
+            try:
+                requested = self.__session.post('http://210.69.124.221/FJUD/FJUDQRY02_1.aspx', self.payload,
+                                                headers={'referer': 'http://jirs.judicial.gov.tw/FJUD/FJUDQRY01_1.aspx'})
+                break
+            except Exception as e:
+                logging.warning('post failed: {}'.format(e))
+
         requested.encoding = 'utf-8'
         return requested.text
 
@@ -118,6 +124,8 @@ def main():
                 from io import open
                 with open('rulings/{}_{}_{}_{}'.format(idx, t, court_abbr, l_idx), mode='w', encoding='utf-8') as fh:
                     fh.write(full_text)
+                import time
+                time.sleep(.3)
 
 
 if __name__ == '__main__':
