@@ -2,13 +2,14 @@
 # -*- encoding: utf-8 -*-
 
 from bs4 import BeautifulSoup
-
+import logging
 
 class Crawler:
 
     def __init__(self):
 
         import requests
+        logging.basicConfig(filename='crawler.log',level=logging.WARNING)
         self.__session = requests.Session()
         self.__session.get('http://210.69.124.221/FJUD/FJUDQRY01_1.aspx',
                            headers={'referer':'http://jirs.judicial.gov.tw/FJUD/FJUDQRY01_1.aspx'}
@@ -58,18 +59,36 @@ class Crawler:
                 if cand is not None and cand is not '#':
                     to_return.append(self.prefix+cand)
 
+        # check if page has next page
+        next_page = soup.findAll('a', href=True, text='下一頁')
+        if len(next_page) > 0:
+            # follow up
+            follow_up_page = self.prefix + next_page[0]['href']
+            follow_up_results = self.__session.get(follow_up_page,
+                                                   headers={
+                                                       'referer':'http://jirs.judicial.gov.tw/FJUD/FJUDQRY02_1.aspx'
+                                                   }
+                                                   )
+            to_return.extend(self.get_links(follow_up_results.text))
+
         return to_return
 
 def main():
-    terms = [u'賴素如', u'蔡正元']
+    # terms = [u'賴素如', u'蔡正元']
+    terms = [u'蔡']
+
     court = u'SLD 臺灣士林地方法院'
     c = Crawler()
     for t in terms:
         print u'term {}'.format(t)
         q = c.query(t, court)
         links = c.get_links(q)
-        for l in links:
-            print c.cleanse(c.get(l))
+        for l_idx, l in enumerate(links):
+            # print l
+            full_text = c.cleanse(c.get(l))
+            from io import open
+            with open(u'{}_{}'.format(t, l_idx), mode='w', encoding='utf-8') as fh:
+                fh.write(full_text)
 
 
 
